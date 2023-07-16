@@ -6,7 +6,6 @@ use App\Models\Chat;
 use App\Services\ListService;
 use App\Services\TelegramService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Str;
 
 class TelegramController extends Controller
 {
@@ -31,10 +30,8 @@ class TelegramController extends Controller
         $chat = Chat::find($user_id);
         $text = $request->message['text'];
 
-
-
         if (!$chat) {
-            $chat = Chat::create(['id' => $user_id, 'token' => $this->generateToken($user_id)]);
+            $chat = Chat::create(['id' => $user_id, 'token' => Chat::generateToken($user_id)]);
         }
 
         if ($text == '/token') {
@@ -57,7 +54,7 @@ class TelegramController extends Controller
     {
         $response = $this->list->fetch($chat->token);
         if ($response->unauthorized()) {
-            $this->telegram->sendMessage('Токен не зарегистрирован', $chat);
+            $this->telegram->sendMessage('Токен не привязан', $chat);
             return;
         }
         if ($response->failed()) {
@@ -81,7 +78,7 @@ class TelegramController extends Controller
 
     protected function newToken(Chat $chat)
     {
-        $chat->token = $this->generateToken($chat->id);
+        $chat->token = Chat::generateToken($chat->id);
         $chat->save();
         $this->sendToken($chat);
     }
@@ -89,10 +86,5 @@ class TelegramController extends Controller
     protected function sendToken(Chat $chat)
     {
         $this->telegram->sendMessage($chat->token, $chat);
-    }
-
-    protected function generateToken(int $user_id)
-    {
-        return $user_id . ':' . Str::random(40);
     }
 }
